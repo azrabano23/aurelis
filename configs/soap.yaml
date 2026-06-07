@@ -1,0 +1,9 @@
+# Grade clerkship SOAP notes against the soap-v1 rubric with an LLM judge.
+task: soap
+grader: llm            # llm | checklist
+provider: anthropic
+model: claude-opus-4-8
+max_tokens: 1024
+thinking: true
+effort: high
+limit: null

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aurelis"
+version = "0.1.0"
+description = "AI-assisted clinical documentation training: a reproducible, human-validated LLM grader for medical students' clinical notes."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Azra Bano" }]
+keywords = ["llm", "evaluation", "medical-education", "clinical-documentation", "llm-as-judge", "scalable-oversight"]
+dependencies = [
+    "anthropic>=0.40",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+aurelis = "aurelis.cli:main"
+
+[tool.setuptools]
+packages = ["aurelis", "aurelis.providers", "aurelis.grading", "aurelis.tasks"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
