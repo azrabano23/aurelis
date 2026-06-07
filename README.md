@@ -8,7 +8,7 @@
 
 It pairs a reproducible LLM-as-judge grader with the statistics that make an automated grade defensible: quadratic-weighted kappa and Pearson correlation against faculty gold scores. Same note in, same grade out, every time.
 
-> Built at the **Rutgers Health Hack**, where it placed **3rd out of 200+**. I taught myself to code that weekend, pitched my way onto a team of MS/PhD students, and owned the engineering end-to-end. The interesting constraint wasn't the model — it was shipping something a clinician would trust, in 48 hours, with no prior production experience. This repo is that prototype, rebuilt properly.
+> Aurelis began at the **Rutgers Health Hack** (3rd of 200+, built over one weekend — I taught myself to code that weekend and pitched my way onto a team of MS/PhD students). It has since gone through **NSF I-Corps** customer discovery and clinical conversations with faculty at **Robert Wood Johnson Medical School**, **Columbia**, and **Rutgers**, with active interest in piloting at additional programs. The validation in this repo runs on synthetic cases and public **ACI-Bench** notes; folding in de-identified, faculty-scored notes from those collaborations is the next step — and the entire point of the human-agreement harness. The hard part was never the model; it was building something a clinician would actually trust.
 
 ---
 
