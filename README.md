@@ -24,7 +24,7 @@ Clinical documentation is a graded, high-stakes skill, and the feedback loop for
 
 Aurelis grades a note against an explicit, faculty-style rubric and returns, per dimension, a score **plus the evidence it cited from the note and the elements it found missing** — so feedback is actionable and every grade is auditable rather than a black box. Critically, it ships the machinery to **validate the grader against human scores** (`qwk`, `pearson_r`, `mae`) so a program can verify the grader is trustworthy *on their own rubric and their own notes* before relying on it.
 
-A naïve keyword-checklist baseline already correlates with faculty at **Pearson 0.63 / QWK 0.34** on the sample set — moderate, and tellingly weakest on the reasoning-heavy *assessment* dimension (QWK 0.20), which is precisely what the LLM grader exists to fix. That gap *is* the product thesis: deterministic checks get you presence-of-facts; judging clinical reasoning needs a model.
+On **real clinical notes from ACI-Bench** (20 expert encounter notes, no PHI), a deterministic keyword baseline detects *missing sections* well but is **completely blind to an injected clinical contradiction** — exactly the reasoning failure that requires a model. That gap *is* the product thesis: deterministic checks get you presence-of-facts; judging clinical reasoning needs an LLM (see [Validation](#validation-on-real-clinical-notes-aci-bench)).
 
 ---
 
@@ -67,6 +67,21 @@ The headline question isn't "what grade did the AI give" but "**does the AI grad
 
 This framing — *use a model to evaluate expert work, then validate the evaluator against human judgment* — is applied **scalable oversight**, the same question AI alignment research asks about supervising capable models. Aurelis is a concrete, measurable instance of it in a domain where the ground truth (a faculty grade) actually exists.
 
+## Validation on real clinical notes (ACI-Bench)
+
+Faculty-graded note corpora are scarce and PHI-protected, so to validate the grader on *real* clinical text I use a **perturbation method** that needs no human labels: take expert reference notes from the public [ACI-Bench](https://github.com/wyim/aci-bench) benchmark, systematically damage one section, and check that the grader's score drops on the dimension you damaged (**sensitivity**) and *only* that dimension (**specificity**). The known damage is the objective ground truth.
+
+Real results on 20 ACI-Bench notes with the deterministic checklist grader (`python scripts/validate_acibench.py --grader checklist`):
+
+| perturbation | targeted-dim score drop | off-target drop | detection rate |
+|---|---:|---:|---:|
+| drop Subjective sections | **3.0** | 0.0 | 0.90 |
+| drop Objective sections | **1.8** | 0.0 | 0.80 |
+| drop Assessment+Plan | **1.7** | 0.0 | 0.85 |
+| inject a clinical contradiction | **0.0** | 0.0 | **0.00** |
+
+Two things to read off this. First, **perfect specificity** (0.0 off-target drop everywhere): the grader never penalizes the wrong dimension. Second, the deterministic grader catches omissions but **cannot see a contradiction** (0.00) — it has no model of clinical reasoning. That last row is the empirical argument for the LLM grader, and the harness is grader-agnostic: swap in `--grader llm` (needs `ANTHROPIC_API_KEY`) and the same table measures whether the model closes that gap.
+
 ---
 
 ## Technical skills this demonstrates
@@ -83,7 +98,7 @@ Clean layered architecture with hard interface boundaries; LLM-as-judge eval des
 
 ## Roadmap & honest limitations
 
-The shipped datasets are small (6 synthetic, de-identified cases) and exist to demonstrate the methodology, not to certify a grader — real deployment requires calibrating QWK on a program's own faculty-scored corpus. LLM-as-judge inherits the judge's biases; the deterministic checklist is the guardrail, and rubrics are kept narrow and explicit. Next: a held-out human-graded benchmark, inter-faculty agreement as the ceiling to compare against, bias audits across note styles, and OSCE/SBAR rubrics.
+Two validation paths ship today: human-agreement (QWK/Pearson/MAE) on a small faculty-scored set, and perturbation-based construct validity on real ACI-Bench notes (above). Neither certifies a production grader on its own — real deployment requires calibrating QWK on a program's *own* faculty-scored corpus, and the perturbation set should grow to cover subtler reasoning errors than a single injected contradiction. LLM-as-judge inherits the judge's biases; the deterministic checklist is the guardrail, and rubrics are kept narrow and explicit. Next: a held-out human-graded benchmark, inter-faculty agreement as the ceiling to compare against, bias audits across note styles, and OSCE/SBAR rubrics.
 
 ---
 
@@ -96,7 +111,11 @@ export ANTHROPIC_API_KEY=sk-ant-...
 aurelis grade  configs/soap.yaml     # grade the SOAP dataset, record the run, print metrics + validation
 aurelis report <run_id>              # render a per-note feedback report (Markdown)
 aurelis list                         # list past runs with their QWK
-pytest -q                            # 16 tests, fully offline against the mock grader
+pytest -q                            # 20 tests, fully offline against the mock grader
+
+# validate the grader on real ACI-Bench notes via section perturbation:
+python scripts/validate_acibench.py --grader checklist --limit 20   # offline, no key
+python scripts/validate_acibench.py --grader llm --provider anthropic  # needs ANTHROPIC_API_KEY
 ```
 
 ```python
